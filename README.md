@@ -101,22 +101,32 @@ docker run -p 8080:8080 mcp-stock-advisor
 
 ```python
 import asyncio
-from mcp import Client
-from mcp.client.stdio import stdio_client
+from mcp_client import MCPClient
 
 async def main():
-    async with stdio_client(command=["python", "stock_advisor_server.py"]) as (read, write):
-        async with Client(read, write) as client:
-            await client.initialize()
-            
-            # 获取专业投资建议
-            result = await client.call_tool(
-                "get_professional_investment_advice",
-                arguments={"symbol": "600136"}
-            )
-            print(result)
+    client = MCPClient()
+    
+    # 获取专业投资建议
+    advice = await client.call_tool(
+        "get_professional_investment_advice",
+        {"symbol": "600136"}
+    )
+    print(advice)
 
 asyncio.run(main())
+```
+
+### HTTP API调用
+
+```bash
+# 获取股票价格
+curl http://localhost:8080/api/stock/price/600136
+
+# 获取投资建议
+curl http://localhost:8080/api/stock/advice/600136
+
+# 搜索股票
+curl http://localhost:8080/api/stock/search/恒瑞医药
 ```
 
 ### 命令行工具
@@ -189,133 +199,175 @@ export LOG_LEVEL=INFO                   # 日志级别
 创建 `config.json`：
 ```json
 {
-    "data_sources": {
-        "primary": "eastmoney",
-        "fallback": "tonghuashun"
-    },
-    "cache": {
-        "enabled": true,
-        "timeout": 300
-    },
-    "analysis": {
-        "weights": {
-            "fundamental": 0.3,
-            "technical": 0.3,
-            "money_flow": 0.25,
-            "sentiment": 0.15
-        }
-    }
+  "server": {
+    "name": "股票建议助手",
+    "port": 8080,
+    "debug": false
+  },
+  "data": {
+    "source": "eastmoney",
+    "cache_timeout": 300,
+    "retry_times": 3
+  },
+  "analysis": {
+    "fundamental_weight": 0.30,
+    "technical_weight": 0.30,
+    "money_flow_weight": 0.25,
+    "sentiment_weight": 0.15
+  }
 }
 ```
 
-## 📊 API响应示例
+## 📚 示例代码
 
-### 获取股票价格
-```json
-{
-    "symbol": "600136",
-    "name": "恒瑞医药",
-    "current_price": 45.67,
-    "change": 0.56,
-    "change_percent": 1.24,
-    "volume": 2345678,
-    "market_cap": "2800亿",
-    "pe_ratio": 35.2,
-    "timestamp": "2024-01-15T10:30:00"
-}
+### 基础使用示例
+
+```python
+#!/usr/bin/env python3
+import asyncio
+from stock_data_fetcher import fetch_stock_data
+
+async def get_stock_analysis(symbol):
+    """获取股票分析"""
+    data = await fetch_stock_data(symbol)
+    
+    if data and data.get('basic_info'):
+        basic = data['basic_info']
+        print(f"股票名称: {basic.get('name')}")
+        print(f"当前价格: {basic.get('price'):.2f}元")
+        print(f"涨跌幅: {basic.get('change_percent'):+.2f}%")
+    
+    return data
+
+# 使用示例
+asyncio.run(get_stock_analysis('600136'))
 ```
 
-### 获取投资建议
-```json
-{
-    "symbol": "600136",
-    "name": "恒瑞医药",
-    "current_price": 45.67,
-    "overall_score": 74.0,
-    "recommendation": "推荐",
-    "confidence": "较高",
-    "target_price": 50.24,
-    "stop_loss": 42.93,
-    "risk_level": "中",
-    "analysis": {
-        "fundamental_analysis": {"score": 85.0, "assessment": "优秀"},
-        "technical_analysis": {"score": 70.0, "assessment": "较好"},
-        "money_flow_analysis": {"score": 75.0, "assessment": "较好"},
-        "market_sentiment": {"score": 80.0, "assessment": "良好"}
-    }
-}
+### 批量分析示例
+
+```python
+import asyncio
+import json
+
+async def batch_analysis(symbols):
+    """批量股票分析"""
+    results = {}
+    
+    for symbol in symbols:
+        try:
+            data = await fetch_stock_data(symbol)
+            results[symbol] = data
+            print(f"✅ {symbol} 分析完成")
+        except Exception as e:
+            print(f"❌ {symbol} 分析失败: {e}")
+    
+    # 保存结果
+    with open('batch_results.json', 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+    
+    return results
+
+# 批量分析示例
+symbols = ['600136', '000001', '000002', '600519']
+asyncio.run(batch_analysis(symbols))
 ```
 
-## 🐛 故障排除
+## 🔍 故障排除
 
 ### 常见问题
 
-1. **无法获取股票数据**
-   - 检查网络连接
-   - 确认股票代码是否正确
-   - 查看日志获取详细错误信息
+**Q: 服务启动失败**
+```bash
+# 检查端口占用
+netstat -an | grep 8080
 
-2. **MCP服务启动失败**
-   - 检查端口是否被占用
-   - 确认Python版本兼容性
-   - 检查依赖包是否完整
+# 检查Python版本
+python --version
 
-3. **分析结果不准确**
-   - 检查数据源是否正常
-   - 确认缓存是否过期
-   - 查看权重配置是否合理
+# 检查依赖安装
+pip list | grep fastmcp
+```
 
-### 调试模式
+**Q: 数据获取失败**
+```bash
+# 测试网络连接
+ping push2.eastmoney.com
+
+# 检查防火墙设置
+# 确保可以访问外部API
+```
+
+**Q: 内存使用过高**
+```bash
+# 调整缓存设置
+export CACHE_TIMEOUT=60
+
+# 限制并发请求
+export MAX_CONCURRENT=5
+```
+
+### 日志查看
 
 ```bash
-# 启用调试模式
-python stock_advisor_server.py --debug
+# 查看服务日志
+tail -f mcp-stock.log
 
-# 查看详细日志
-python stock_advisor_server.py --debug 2>&1 | tee debug.log
+# 调试模式启动
+python stock_advisor_server.py --debug --log-level DEBUG
 ```
 
 ## 🤝 贡献指南
 
-欢迎提交Issue和Pull Request！
+我们欢迎社区贡献！请遵循以下步骤：
 
-### 开发环境搭建
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 开发环境设置
 
 ```bash
-# 1. 克隆项目
+# 克隆开发版本
 git clone https://github.com/F415643/stock-advisor-mcp-service.git
+cd stock-advisor-mcp-service
 
-# 2. 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
-venv\Scripts\activate     # Windows
-
-# 3. 安装开发依赖
-pip install -r requirements.txt
+# 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 4. 运行测试
+# 运行测试
 python -m pytest tests/
+
+# 代码格式化
+black .
+flake8 .
 ```
 
 ## 📄 许可证
 
-MIT License - 详见 [LICENSE](LICENSE) 文件
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 🙋‍♂️ 联系我们
+## 🙏 致谢
 
-- 📧 Issues：[GitHub Issues](https://github.com/F415643/stock-advisor-mcp-service/issues)
+- [东方财富](https://www.eastmoney.com/) - 提供股票数据API
+- [FastMCP](https://gofastmcp.com/) - MCP服务框架
+- [Python](https://python.org/) - 开发语言
 
-## 🔄 更新日志
+## 📞 联系我们
 
-### v1.0.0 (2024-01-15)
-- ✨ 初始版本发布
-- 📊 实现四维度股票分析
-- 🔍 集成东方财富API
-- 📈 添加投资建议系统
-- 🐳 支持Docker部署
+- 📧 邮箱: your-email@example.com
+- 🐛 问题反馈: [GitHub Issues](https://github.com/F415643/stock-advisor-mcp-service/issues)
+- 💬 讨论: [GitHub Discussions](https://github.com/F415643/stock-advisor-mcp-service/discussions)
+
+## 🔗 相关链接
+
+- [MCP协议文档](https://modelcontextprotocol.io/)
+- [东方财富API文档](https://www.eastmoney.com/api)
+- [项目Wiki](https://github.com/F415643/stock-advisor-mcp-service/wiki)
 
 ---
 
-⭐ 如果这个项目对您有帮助，请给我们一个Star！
+⭐ 如果这个项目对你有帮助，请给我们一个星标！
+
+**免责声明**: 本服务提供的投资建议仅供参考，不构成投资建议。投资有风险，入市需谨慎。请根据自身情况做出投资决策。

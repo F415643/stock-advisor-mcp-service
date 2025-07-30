@@ -199,419 +199,361 @@ async def get_professional_investment_advice(symbol: str, ctx: Context) -> Dict[
             
             try:
                 tech_indicators = await fetcher.get_technical_indicators(symbol)
-                await ctx.info("技术指标数据获取完成")
+                await ctx.info("技术指标获取完成")
             except Exception as e:
-                await ctx.error(f"技术指标数据获取失败: {e}")
+                await ctx.error(f"技术指标获取失败: {e}")
                 tech_indicators = {}
             
             try:
                 sentiment = await fetcher.get_market_sentiment(symbol)
-                await ctx.info("市场情绪数据获取完成")
+                await ctx.info("市场情绪获取完成")
             except Exception as e:
-                await ctx.error(f"市场情绪数据获取失败: {e}")
+                await ctx.error(f"市场情绪获取失败: {e}")
                 sentiment = {}
             
             try:
                 news = await fetcher.get_stock_news(symbol)
-                await ctx.info("新闻数据获取完成")
+                await ctx.info(f"新闻数据获取完成，共{len(news) if news else 0}条")
             except Exception as e:
                 await ctx.error(f"新闻数据获取失败: {e}")
                 news = []
             
-            # 构建综合分析报告
-            analysis_report = {
-                "symbol": symbol,
-                "name": basic_info.get("name", ""),
-                "current_price": basic_info.get("price", 0),
-                "analysis_timestamp": datetime.now().isoformat(),
-                "data_sources": ["eastmoney", "financial", "news"],
-                "basic_info": basic_info,
-                "technical_analysis": tech_indicators,
-                "fundamental_analysis": financial_data,
-                "money_flow_analysis": money_flow,
-                "market_sentiment": sentiment,
-                "recent_news": news[:5]  # 只保留最近5条新闻
-            }
+            # 生成专业投资建议
+            await ctx.info("开始生成专业投资建议...")
+            advice = await _generate_professional_advice(
+                basic_info, financial_data, money_flow, tech_indicators, sentiment, news, ctx
+            )
             
-            # 生成投资建议
-            recommendation = await _generate_investment_recommendation(analysis_report, ctx)
-            
-            return recommendation
+            await ctx.info(f"成功生成 {symbol} 的专业投资建议")
+            return advice
             
     except Exception as e:
-        await ctx.error(f"生成投资建议时发生错误: {str(e)}")
-        return {"error": f"生成投资建议失败: {str(e)}"}
+        await ctx.error(f"生成专业投资建议时发生错误: {str(e)}")
+        import traceback
+        await ctx.error(f"错误详情: {traceback.format_exc()}")
+        return {"error": f"生成专业投资建议失败: {str(e)}"}
 
-@mcp.tool
-async def search_stock_by_name(name: str, ctx: Context) -> List[Dict[str, Any]]:
-    """
-    根据股票名称搜索股票代码
+async def _generate_professional_advice(basic_info: Dict, financial_data: Dict, money_flow: Dict, 
+                                      tech_indicators: Dict, sentiment: Dict, news: List, ctx: Context) -> Dict[str, Any]:
+    """生成专业投资建议"""
     
-    Args:
-        name: 股票名称或关键词
+    # 安全获取数据
+    symbol = basic_info.get('symbol', '') if isinstance(basic_info, dict) else ''
+    current_price = basic_info.get('price', 0) if isinstance(basic_info, dict) else 0
+    change_percent = basic_info.get('change_percent', 0) if isinstance(basic_info, dict) else 0
     
-    Returns:
-        匹配的股票列表
-    """
-    await ctx.info(f"正在搜索包含 '{name}' 的股票...")
+    await ctx.info(f"开始分析 {symbol} 的专业投资建议...")
     
+    # 1. 基本面分析
     try:
-        results = await search_stock(name)
-        if results:
-            await ctx.info(f"找到 {len(results)} 个匹配的股票")
-            return results
-        else:
-            await ctx.info("未找到匹配的股票")
-            return [{"message": f"未找到包含 '{name}' 的股票"}]
-            
+        fundamental_score = _analyze_fundamentals(basic_info, financial_data)
+        await ctx.info(f"基本面分析完成，评分: {fundamental_score}")
     except Exception as e:
-        await ctx.error(f"搜索股票时发生错误: {str(e)}")
-        return [{"error": f"搜索失败: {str(e)}"}]
-
-@mcp.tool
-async def get_comprehensive_analysis(symbol: str, ctx: Context) -> Dict[str, Any]:
-    """
-    获取股票的完整综合分析报告
+        await ctx.error(f"基本面分析失败: {e}")
+        fundamental_score = 50
     
-    Args:
-        symbol: 股票代码
-    
-    Returns:
-        包含所有分析维度的完整报告
-    """
-    await ctx.info(f"正在生成股票 {symbol} 的完整综合分析报告...")
-    
+    # 2. 技术面分析
     try:
-        # 获取基础价格信息
-        price_info = await get_stock_price(symbol, ctx)
-        if "error" in price_info:
-            return price_info
-        
-        # 获取专业投资建议
-        investment_advice = await get_professional_investment_advice(symbol, ctx)
-        if "error" in investment_advice:
-            return investment_advice
-        
-        # 合并所有信息
-        comprehensive_report = {
-            "symbol": symbol,
-            "name": price_info.get("name", ""),
-            "analysis_date": datetime.now().isoformat(),
-            "price_info": price_info,
-            "investment_advice": investment_advice,
-            "summary": {
-                "current_price": price_info.get("current_price", 0),
-                "recommendation": investment_advice.get("recommendation", "未知"),
-                "confidence": investment_advice.get("confidence", 0),
-                "target_price": investment_advice.get("target_price", 0),
-                "stop_loss": investment_advice.get("stop_loss", 0),
-                "risk_level": investment_advice.get("risk_level", "未知")
-            }
+        technical_score = _analyze_technical_indicators(tech_indicators, basic_info)
+        await ctx.info(f"技术面分析完成，评分: {technical_score}")
+    except Exception as e:
+        await ctx.error(f"技术面分析失败: {e}")
+        technical_score = 50
+    
+    # 3. 资金流分析
+    try:
+        money_flow_score = _analyze_money_flow(money_flow, basic_info)
+        await ctx.info(f"资金流分析完成，评分: {money_flow_score}")
+    except Exception as e:
+        await ctx.error(f"资金流分析失败: {e}")
+        money_flow_score = 50
+    
+    # 4. 情绪分析
+    try:
+        sentiment_score = _analyze_market_sentiment(sentiment, news)
+        await ctx.info(f"情绪分析完成，评分: {sentiment_score}")
+    except Exception as e:
+        await ctx.error(f"情绪分析失败: {e}")
+        sentiment_score = 50
+    
+    # 5. 综合评分
+    total_score = (fundamental_score * 0.3 + technical_score * 0.3 + 
+                  money_flow_score * 0.25 + sentiment_score * 0.15)
+    
+    await ctx.info(f"综合评分计算完成: {total_score:.2f}")
+    
+    # 6. 生成投资建议
+    try:
+        investment_advice = _generate_final_recommendation(total_score, {
+            'fundamental': fundamental_score,
+            'technical': technical_score, 
+            'money_flow': money_flow_score,
+            'sentiment': sentiment_score
+        })
+        await ctx.info("投资建议生成完成")
+    except Exception as e:
+        await ctx.error(f"投资建议生成失败: {e}")
+        investment_advice = {
+            'recommendation': '观望',
+            'confidence': '中等',
+            'target_multiplier': 1.02,
+            'stop_loss_multiplier': 0.98,
+            'position_size': '空仓',
+            'time_horizon': '观望',
+            'reasons': ['数据分析异常'],
+            'risks': ['建议等待系统恢复正常']
         }
+    
+    return {
+        "symbol": symbol,
+        "current_price": current_price,
+        "change_percent": change_percent,
+        "analysis_timestamp": datetime.now().isoformat(),
         
-        return comprehensive_report
+        # 详细分析
+        "fundamental_analysis": {
+            "score": fundamental_score,
+            "pe_ratio": basic_info.get('pe_ratio', 0),
+            "market_cap": basic_info.get('market_cap', 0),
+            "financial_health": "良好" if financial_data and isinstance(financial_data, dict) else "数据不足",
+            "assessment": _get_fundamental_assessment(fundamental_score)
+        },
         
-    except Exception as e:
-        await ctx.error(f"生成综合分析报告时发生错误: {str(e)}")
-        return {"error": f"生成综合分析报告失败: {str(e)}"}
-
-async def _generate_investment_recommendation(analysis_report: Dict[str, Any], ctx: Context) -> Dict[str, Any]:
-    """生成投资建议"""
-    try:
-        symbol = analysis_report["symbol"]
-        name = analysis_report["name"]
-        current_price = analysis_report["current_price"]
+        "technical_analysis": {
+            "score": technical_score,
+            "indicators": tech_indicators if isinstance(tech_indicators, dict) else {},
+            "trend": "上涨" if change_percent > 0 else "下跌" if change_percent < 0 else "横盘",
+            "assessment": _get_technical_assessment(technical_score)
+        },
         
-        # 计算各维度评分
-        fundamental_score = await _analyze_fundamentals(analysis_report, ctx)
-        technical_score = await _analyze_technical_indicators(analysis_report, ctx)
-        money_flow_score = await _analyze_money_flow(analysis_report, ctx)
-        sentiment_score = await _analyze_market_sentiment(analysis_report, ctx)
+        "money_flow_analysis": {
+            "score": money_flow_score,
+            "main_net_inflow": money_flow.get('main_net_inflow', 0) if isinstance(money_flow, dict) else 0,
+            "volume_ratio": tech_indicators.get('volume_ratio', 0) if isinstance(tech_indicators, dict) else 0,
+            "assessment": _get_money_flow_assessment(money_flow_score)
+        },
         
-        # 计算综合评分
-        weights = {
-            "fundamental": 0.30,
-            "technical": 0.30,
-            "money_flow": 0.25,
-            "sentiment": 0.15
+        "sentiment_analysis": {
+            "score": sentiment_score,
+            "news_count": len(news) if isinstance(news, list) else 0,
+            "market_attention": sentiment.get('market_attention', 'medium') if isinstance(sentiment, dict) else 'medium',
+            "assessment": _get_sentiment_assessment(sentiment_score)
+        },
+        
+        # 综合建议
+        "investment_recommendation": {
+            "total_score": round(total_score, 2),
+            "recommendation": investment_advice['recommendation'],
+            "confidence_level": investment_advice['confidence'],
+            "target_price": round(current_price * investment_advice['target_multiplier'], 2),
+            "stop_loss": round(current_price * investment_advice['stop_loss_multiplier'], 2),
+            "position_size": investment_advice['position_size'],
+            "time_horizon": investment_advice['time_horizon'],
+            "key_reasons": investment_advice['reasons'],
+            "risk_warnings": investment_advice['risks']
         }
-        
-        overall_score = (
-            fundamental_score * weights["fundamental"] +
-            technical_score * weights["technical"] +
-            money_flow_score * weights["money_flow"] +
-            sentiment_score * weights["sentiment"]
-        )
-        
-        # 生成投资建议
-        recommendation = await _generate_final_recommendation(
-            overall_score, current_price, ctx
-        )
-        
-        return {
-            "symbol": symbol,
-            "name": name,
-            "current_price": current_price,
-            "analysis": {
-                "fundamental_analysis": {
-                    "score": fundamental_score,
-                    "assessment": _get_score_assessment(fundamental_score)
-                },
-                "technical_analysis": {
-                    "score": technical_score,
-                    "assessment": _get_score_assessment(technical_score)
-                },
-                "money_flow_analysis": {
-                    "score": money_flow_score,
-                    "assessment": _get_score_assessment(money_flow_score)
-                },
-                "market_sentiment": {
-                    "score": sentiment_score,
-                    "assessment": _get_score_assessment(sentiment_score)
-                }
-            },
-            "overall_score": round(overall_score, 1),
-            "recommendation": recommendation["recommendation"],
-            "confidence": recommendation["confidence"],
-            "target_price": recommendation["target_price"],
-            "stop_loss": recommendation["stop_loss"],
-            "risk_level": recommendation["risk_level"],
-            "reasoning": recommendation["reasoning"],
-            "analysis_timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        await ctx.error(f"生成投资建议时发生错误: {str(e)}")
-        return {"error": f"生成投资建议失败: {str(e)}"}
+    }
 
-async def _analyze_fundamentals(analysis_report: Dict[str, Any], ctx: Context) -> float:
-    """分析基本面"""
+def _analyze_fundamentals(basic_info: Dict, financial_data: Dict) -> float:
+    """基本面分析评分 (0-100)"""
+    score = 50  # 基础分
+    
     try:
-        score = 50  # 基础分
+        pe_ratio = basic_info.get('pe_ratio', 0)
+        market_cap = basic_info.get('market_cap', 0)
         
-        basic_info = analysis_report.get("basic_info", {})
-        financial_data = analysis_report.get("fundamental_analysis", {})
-        
-        # PE估值评估
-        pe_ratio = basic_info.get("pe_ratio", 0)
-        if pe_ratio > 0:
-            if pe_ratio < 15:
-                score += 15  # 低估值
-            elif pe_ratio < 25:
-                score += 10  # 合理估值
-            elif pe_ratio < 40:
-                score += 5   # 略高估值
-            else:
-                score -= 5   # 高估值
+        # PE估值分析
+        if 0 < pe_ratio < 15:
+            score += 20  # 低估值
+        elif 15 <= pe_ratio < 25:
+            score += 10  # 合理估值
+        elif pe_ratio >= 40:
+            score -= 15  # 高估值
         
         # 市值稳定性
-        market_cap = basic_info.get("market_cap", 0)
-        if market_cap > 100000000000:  # 1000亿以上
+        if market_cap > 50000000000:  # 500亿以上
             score += 10
-        elif market_cap > 50000000000:  # 500亿以上
+        elif market_cap > 10000000000:  # 100亿以上
             score += 5
         
-        return min(100, max(0, score))
-        
-    except Exception as e:
-        await ctx.error(f"基本面分析失败: {str(e)}")
-        return 50
+        # 财务数据分析
+        if isinstance(financial_data, dict) and financial_data:
+            if financial_data.get('roe'):
+                score += 10  # 有ROE数据
+            if financial_data.get('profit'):
+                score += 5   # 有利润数据
+    
+    except Exception:
+        pass
+    
+    return max(0, min(100, score))
 
-async def _analyze_technical_indicators(analysis_report: Dict[str, Any], ctx: Context) -> float:
-    """分析技术指标"""
-    try:
-        score = 50  # 基础分
-        
-        basic_info = analysis_report.get("basic_info", {})
-        tech_data = analysis_report.get("technical_analysis", {})
-        
-        # 价格趋势分析
-        change_percent = basic_info.get("change_percent", 0)
-        if change_percent > 5:
-            score += 15
-        elif change_percent > 2:
-            score += 10
-        elif change_percent > 0:
-            score += 5
-        elif change_percent < -5:
-            score -= 15
-        elif change_percent < -2:
-            score -= 10
-        
-        # 成交量分析
-        volume = basic_info.get("volume", 0)
-        if volume > 1000000:  # 高成交量
-            score += 5
-        
-        return min(100, max(0, score))
-        
-    except Exception as e:
-        await ctx.error(f"技术面分析失败: {str(e)}")
-        return 50
-
-async def _analyze_money_flow(analysis_report: Dict[str, Any], ctx: Context) -> float:
-    """分析资金流向"""
-    try:
-        score = 50  # 基础分
-        
-        money_flow_data = analysis_report.get("money_flow_analysis", {})
-        
-        # 主力资金流向
-        main_inflow = money_flow_data.get("main_net_inflow", 0)
-        if main_inflow > 10000000:  # 1000万以上流入
-            score += 20
-        elif main_inflow > 5000000:  # 500万以上流入
-            score += 15
-        elif main_inflow > 1000000:  # 100万以上流入
-            score += 10
-        elif main_inflow < -10000000:  # 1000万以上流出
-            score -= 20
-        elif main_inflow < -5000000:  # 500万以上流出
-            score -= 15
-        
-        return min(100, max(0, score))
-        
-    except Exception as e:
-        await ctx.error(f"资金流向分析失败: {str(e)}")
-        return 50
-
-async def _analyze_market_sentiment(analysis_report: Dict[str, Any], ctx: Context) -> float:
-    """分析市场情绪"""
-    try:
-        score = 50  # 基础分
-        
-        sentiment_data = analysis_report.get("market_sentiment", {})
-        news_list = analysis_report.get("recent_news", [])
-        
-        # 新闻数量评估
-        news_count = len(news_list)
-        if news_count >= 5:
-            score += 10  # 高关注度
-        elif news_count >= 3:
-            score += 5   # 中等关注度
-        
-        # 新闻情绪分析（简单实现）
-        positive_keywords = ["增长", "预增", "盈利", "利好", "上涨"]
-        negative_keywords = ["下跌", "亏损", "减持", "利空", "风险"]
-        
-        positive_count = 0
-        negative_count = 0
-        
-        for news in news_list:
-            title = news.get("title", "")
-            content = news.get("summary", "")
-            text = title + content
-            
-            for keyword in positive_keywords:
-                if keyword in text:
-                    positive_count += 1
-            
-            for keyword in negative_keywords:
-                if keyword in text:
-                    negative_count += 1
-        
-        # 情绪评分
-        if positive_count > negative_count:
-            score += 15
-        elif positive_count == negative_count and positive_count > 0:
-            score += 5
-        elif negative_count > positive_count:
-            score -= 10
-        
-        return min(100, max(0, score))
-        
-    except Exception as e:
-        await ctx.error(f"市场情绪分析失败: {str(e)}")
-        return 50
-
-async def _generate_final_recommendation(score: float, current_price: float, ctx: Context) -> Dict[str, Any]:
-    """生成最终投资建议"""
-    try:
-        # 根据评分生成建议
-        if score >= 75:
-            recommendation = "强烈推荐"
-            confidence = "高"
-            target_gain = 0.15  # 15%目标涨幅
-            stop_loss_percent = 0.08  # 8%止损
-        elif score >= 65:
-            recommendation = "推荐"
-            confidence = "较高"
-            target_gain = 0.10  # 10%目标涨幅
-            stop_loss_percent = 0.06  # 6%止损
-        elif score >= 55:
-            recommendation = "谨慎关注"
-            confidence = "中等"
-            target_gain = 0.05  # 5%目标涨幅
-            stop_loss_percent = 0.04  # 4%止损
-        elif score >= 45:
-            recommendation = "观望"
-            confidence = "中等"
-            target_gain = 0.02  # 2%目标涨幅
-            stop_loss_percent = 0.02  # 2%止损
-        else:
-            recommendation = "回避"
-            confidence = "高"
-            target_gain = -0.02  # -2%预期跌幅
-            stop_loss_percent = 0.05  # 5%止损
-        
-        target_price = round(current_price * (1 + target_gain), 2)
-        stop_loss_price = round(current_price * (1 - stop_loss_percent), 2)
-        
-        # 风险等级
-        if score >= 75:
-            risk_level = "低"
-        elif score >= 55:
-            risk_level = "中"
-        else:
-            risk_level = "高"
-        
-        # 投资建议理由
-        reasoning = f"基于综合评分{score:.1f}分，{recommendation}该股票"
-        
-        return {
-            "recommendation": recommendation,
-            "confidence": confidence,
-            "target_price": target_price,
-            "stop_loss": stop_loss_price,
-            "risk_level": risk_level,
-            "reasoning": reasoning
-        }
-        
-    except Exception as e:
-        await ctx.error(f"生成最终投资建议失败: {str(e)}")
-        return {
-            "recommendation": "未知",
-            "confidence": "低",
-            "target_price": current_price,
-            "stop_loss": current_price * 0.9,
-            "risk_level": "高",
-            "reasoning": "分析过程中发生错误"
-        }
-
-def _get_score_assessment(score: float) -> str:
-    """根据分数返回评估描述"""
-    if score >= 90:
-        return "优秀"
-    elif score >= 80:
-        return "良好"
-    elif score >= 70:
-        return "较好"
-    elif score >= 60:
-        return "一般"
-    elif score >= 50:
-        return "较弱"
-    else:
-        return "较差"
-
-if __name__ == "__main__":
-    print("🚀 启动股票建议MCP服务器...")
-    print(f"服务器名称: {args.name}")
-    if args.debug:
-        print("🐛 调试模式已启用")
+def _analyze_technical_indicators(tech_indicators: Dict, basic_info: Dict) -> float:
+    """技术指标分析评分 (0-100)"""
+    score = 50  # 基础分
     
     try:
-        mcp.run(transport="stdio")
-    except KeyboardInterrupt:
-        print("\n👋 服务器已停止")
-    except Exception as e:
-        print(f"❌ 服务器启动失败: {e}")
+        if not isinstance(tech_indicators, dict):
+            return score
+        
+        current_price = basic_info.get('price', 0)
+        
+        # 移动平均线分析
+        ma5 = tech_indicators.get('ma5', 0)
+        ma10 = tech_indicators.get('ma10', 0)
+        ma20 = tech_indicators.get('ma20', 0)
+        
+        if ma5 > 0 and ma10 > 0 and ma20 > 0:
+            if current_price > ma5 > ma10 > ma20:
+                score += 20  # 多头排列
+            elif current_price > ma5 > ma10:
+                score += 10  # 短期向好
+            elif current_price < ma5 < ma10 < ma20:
+                score -= 20  # 空头排列
+        
+        # RSI分析
+        rsi = tech_indicators.get('rsi', 50)
+        if 30 <= rsi <= 70:
+            score += 10  # RSI正常区间
+        elif rsi < 30:
+            score += 15  # 超卖，可能反弹
+        elif rsi > 70:
+            score -= 10  # 超买，注意风险
+        
+        # MFI分析
+        mfi = tech_indicators.get('mfi', 50)
+        if 20 <= mfi <= 80:
+            score += 5   # MFI正常
+        elif mfi < 20:
+            score += 10  # 资金超卖
+        elif mfi > 80:
+            score -= 10  # 资金超买
+        
+    except Exception:
+        pass
+    
+    return max(0, min(100, score))
+
+def _analyze_money_flow(money_flow: Dict) -> float:
+    """资金流分析评分 (0-100)"""
+    score = 50  # 基础分
+    
+    try:
+        if not isinstance(money_flow, dict):
+            return score
+        
+        main_net_inflow = money_flow.get('main_net_inflow', 0)
+        super_large_net = money_flow.get('super_large_net', 0)
+        large_net = money_flow.get('large_net', 0)
+        
+        # 主力资金流入分析
+        if main_net_inflow > 0:
+            score += 20  # 主力净流入
+            if main_net_inflow > 10000000:  # 1000万以上
+                score += 10
+        else:
+            score -= 15  # 主力净流出
+        
+        # 超大单分析
+        if super_large_net > 0:
+            score += 15  # 超大单净流入
+        elif super_large_net < -5000000:  # 500万以上流出
+            score -= 10
+        
+        # 大单分析
+        if large_net > 0:
+            score += 10  # 大单净流入
+        
+    except Exception:
+        pass
+    
+    return max(0, min(100, score))
+
+def _analyze_market_sentiment(sentiment: Dict, news: List) -> float:
+    """市场情绪分析评分 (0-100)"""
+    score = 50  # 基础分
+    
+    try:
+        # 新闻数量分析
+        if isinstance(news, list):
+            news_count = len(news)
+            if news_count > 5:
+                score += 10  # 关注度高
+            elif news_count > 2:
+                score += 5   # 关注度中等
+        
+        # 市场关注度
+        if isinstance(sentiment, dict):
+            attention = sentiment.get('market_attention', 'medium')
+            if attention == 'high':
+                score += 15
+            elif attention == 'low':
+                score -= 5
+        
+    except Exception:
+        pass
+    
+    return max(0, min(100, score))
+
+def _generate_final_recommendation(total_score: float, scores: Dict) -> Dict[str, Any]:
+    """生成最终投资建议"""
+    
+    if total_score >= 75:
+        recommendation = "强烈推荐"
+        confidence = "高"
+        target_multiplier = 1.15
+        stop_loss_multiplier = 0.92
+        position_size = "重仓"
+        time_horizon = "中长期"
+        reasons = ["基本面优秀", "技术面强势", "资金流入积极"]
+        risks = ["注意大盘系统性风险"]
+    elif total_score >= 65:
+        recommendation = "推荐"
+        confidence = "较高"
+        target_multiplier = 1.10
+        stop_loss_multiplier = 0.94
+        position_size = "标准仓位"
+        time_horizon = "中期"
+        reasons = ["综合表现良好", "上涨概率较大"]
+        risks = ["关注技术面变化", "控制仓位风险"]
+    elif total_score >= 55:
+        recommendation = "谨慎关注"
+        confidence = "中等"
+        target_multiplier = 1.05
+        stop_loss_multiplier = 0.96
+        position_size = "轻仓"
+        time_horizon = "短期"
+        reasons = ["存在一定机会"]
+        risks = ["不确定性较大", "建议小仓位试探"]
+    elif total_score >= 45:
+        recommendation = "观望"
+        confidence = "中等"
+        target_multiplier = 1.02
+        stop_loss_multiplier = 0.98
+        position_size = "空仓"
+        time_horizon = "观望"
+        reasons = ["等待更好时机"]
+        risks = ["当前风险收益比不佳"]
+    else:
+        recommendation = "回避"
+        confidence = "低"
+        target_multiplier = 0.98
+        stop_loss_multiplier = 0.95
+        position_size = "空仓"
+        time_horizon = "回避"
+        reasons = ["风险较大"]
+        risks = ["建议等待更好机会"]
+    
+    return {
+        'recommendation': recommendation,
+        'confidence': confidence,
+        'target_multiplier': target_multiplier,
+        'stop_loss_multiplier': stop_loss_multiplier,
+        'position_size': position_size,
+        'time_horizon': time_horizon,
+        'reasons': reasons,
+        'risks': risks
+    }
+
+if __name__ == "__main__":
+    mcp.run()
