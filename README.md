@@ -158,7 +158,7 @@ python batch_query.py 600136,000001,000002
 
 ## 🛠️ 服务配置
 
-### 服务配置 (Server Config)
+### 1. 基础服务配置 (Server Config)
 
 ```json
 {
@@ -222,6 +222,34 @@ python batch_query.py 600136,000001,000002
         },
         "required": ["symbol"]
       }
+    },
+    {
+      "name": "search_stock_by_name",
+      "description": "按名称搜索股票",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "股票名称"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    {
+      "name": "get_market_data",
+      "description": "获取市场数据分析",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "股票代码，如600136"
+          }
+        },
+        "required": ["symbol"]
+      }
     }
   ],
   "resources": [
@@ -229,19 +257,360 @@ python batch_query.py 600136,000001,000002
       "name": "stock_info",
       "description": "股票基本信息",
       "uri": "/stock/{symbol}/info"
+    },
+    {
+      "name": "technical_data",
+      "description": "技术指标数据",
+      "uri": "/stock/{symbol}/technical"
     }
   ]
 }
 ```
 
-### 环境变量
+### 2. MCP客户端配置
+
+#### 标准MCP配置 (`mcp-config.json`)
+```json
+{
+  "mcpServers": {
+    "stock-data-service": {
+      "command": "python",
+      "args": ["MCP/stock_advisor_server.py", "--name", "股票数据服务"],
+      "env": {
+        "MCP_PORT": "8080",
+        "DATA_SOURCE": "eastmoney",
+        "CACHE_TIMEOUT": "300",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop配置
+```json
+{
+  "mcpServers": {
+    "stock-data-service": {
+      "command": "python",
+      "args": ["d:/trae代码/魔塔MCP/MCP/stock_advisor_server.py", "--name", "股票数据服务"],
+      "env": {
+        "PYTHONPATH": "d:/trae代码/魔塔MCP"
+      }
+    }
+  }
+}
+```
+
+**配置文件位置**：
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+### 3. 环境变量配置
+
+#### 基础环境变量
+```bash
+# 服务端口配置
+export MCP_PORT=8080                    # MCP服务端口
+
+# 数据源配置
+export DATA_SOURCE=eastmoney            # 数据源选择 (eastmoney/tencent/sina)
+
+# 缓存配置
+export CACHE_TIMEOUT=300                # 缓存超时时间（秒）
+export ENABLE_CACHE=true                # 是否启用缓存
+
+# 日志配置
+export LOG_LEVEL=INFO                   # 日志级别 (DEBUG/INFO/WARNING/ERROR)
+export LOG_FILE=mcp-stock.log           # 日志文件路径
+
+# 性能配置
+export MAX_CONCURRENT_REQUESTS=10       # 最大并发请求数
+export REQUEST_TIMEOUT=30               # 请求超时时间（秒）
+```
+
+#### 高级环境变量
+```bash
+# API配置
+export EASTMONEY_API_KEY=""             # 东方财富API密钥（可选）
+export RATE_LIMIT_PER_MINUTE=100        # 每分钟请求限制
+
+# 安全配置
+export ENABLE_AUTH=false                # 是否启用认证
+export API_KEYS="key1,key2,key3"        # API密钥列表
+
+# 数据库配置（可选）
+export DB_HOST=localhost                # 数据库主机
+export DB_PORT=5432                     # 数据库端口
+export DB_NAME=stock_data               # 数据库名称
+export DB_USER=postgres                 # 数据库用户
+export DB_PASSWORD=""                   # 数据库密码
+```
+
+### 4. Docker配置
+
+#### Dockerfile配置
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制源代码
+COPY MCP/ ./MCP/
+COPY *.py ./
+
+# 设置环境变量
+ENV MCP_PORT=8080
+ENV DATA_SOURCE=eastmoney
+ENV LOG_LEVEL=INFO
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8080/health')" || exit 1
+
+# 启动命令
+CMD ["python", "MCP/stock_advisor_server.py", "--name", "股票数据服务"]
+```
+
+#### Docker Compose配置
+```yaml
+version: '3.8'
+services:
+  stock-data-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_PORT=8080
+      - DATA_SOURCE=eastmoney
+      - CACHE_TIMEOUT=300
+      - LOG_LEVEL=INFO
+      - ENABLE_CACHE=true
+      - MAX_CONCURRENT_REQUESTS=10
+    volumes:
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - stock-network
+
+  # Redis缓存服务（可选）
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - stock-network
+
+volumes:
+  redis_data:
+
+networks:
+  stock-network:
+    driver: bridge
+```
+
+### 5. 配置文件管理
+
+#### 创建配置文件 (`config.json`)
+```json
+{
+  "server": {
+    "name": "股票数据服务",
+    "port": 8080,
+    "debug": false,
+    "max_workers": 4
+  },
+  "data": {
+    "source": "eastmoney",
+    "cache_timeout": 300,
+    "retry_times": 3,
+    "request_timeout": 30
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/mcp-stock.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  },
+  "security": {
+    "enable_auth": false,
+    "api_keys": [],
+    "rate_limit": {
+      "requests_per_minute": 100,
+      "burst_size": 10
+    }
+  },
+  "features": {
+    "enable_cache": true,
+    "enable_metrics": true,
+    "enable_health_check": true
+  }
+}
+```
+
+#### 加载配置的Python代码
+```python
+import json
+import os
+from typing import Dict, Any
+
+def load_config(config_path: str = "config.json") -> Dict[str, Any]:
+    """加载配置文件"""
+    default_config = {
+        "server": {"name": "股票数据服务", "port": 8080, "debug": False},
+        "data": {"source": "eastmoney", "cache_timeout": 300},
+        "logging": {"level": "INFO", "file": "mcp-stock.log"}
+    }
+    
+    if os.path.exists(config_path):
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        # 合并默认配置
+        for key, value in default_config.items():
+            if key not in config:
+                config[key] = value
+            elif isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    if sub_key not in config[key]:
+                        config[key][sub_key] = sub_value
+        return config
+    else:
+        return default_config
+
+# 使用示例
+config = load_config()
+server_port = config["server"]["port"]
+data_source = config["data"]["source"]
+```
+
+### 6. 命令行参数配置
 
 ```bash
-# 可选配置
-export MCP_PORT=8080                    # MCP服务端口
-export DATA_SOURCE=eastmoney            # 数据源选择
-export CACHE_TIMEOUT=300                # 缓存超时时间（秒）
-export LOG_LEVEL=INFO                   # 日志级别
+# 基础启动
+python stock_advisor_server.py
+
+# 指定服务名称
+python stock_advisor_server.py --name "股票数据服务"
+
+# 启用调试模式
+python stock_advisor_server.py --debug
+
+# 指定端口
+python stock_advisor_server.py --port 8080
+
+# 指定配置文件
+python stock_advisor_server.py --config config.json
+
+# 指定日志级别
+python stock_advisor_server.py --log-level DEBUG
+
+# 组合使用
+python stock_advisor_server.py --name "股票数据服务" --debug --port 8080 --log-level INFO
+```
+
+### 7. 配置验证
+
+#### 配置检查脚本
+```python
+#!/usr/bin/env python3
+"""配置验证脚本"""
+
+import json
+import os
+import sys
+
+def validate_config():
+    """验证配置文件"""
+    errors = []
+    
+    # 检查必需的环境变量
+    required_env = ["MCP_PORT", "DATA_SOURCE"]
+    for env_var in required_env:
+        if not os.getenv(env_var):
+            errors.append(f"缺少环境变量: {env_var}")
+    
+    # 检查端口是否可用
+    port = int(os.getenv("MCP_PORT", 8080))
+    if not (1024 <= port <= 65535):
+        errors.append(f"端口号无效: {port}")
+    
+    # 检查数据源配置
+    data_source = os.getenv("DATA_SOURCE", "eastmoney")
+    if data_source not in ["eastmoney", "tencent", "sina"]:
+        errors.append(f"不支持的数据源: {data_source}")
+    
+    # 检查日志级别
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+    if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        errors.append(f"无效的日志级别: {log_level}")
+    
+    if errors:
+        print("配置验证失败:")
+        for error in errors:
+            print(f"  - {error}")
+        sys.exit(1)
+    else:
+        print("配置验证通过!")
+
+if __name__ == "__main__":
+    validate_config()
+```
+
+### 8. 配置最佳实践
+
+#### 开发环境配置
+```bash
+# .env.development
+MCP_PORT=8080
+DATA_SOURCE=eastmoney
+LOG_LEVEL=DEBUG
+ENABLE_CACHE=false
+MAX_CONCURRENT_REQUESTS=5
+```
+
+#### 生产环境配置
+```bash
+# .env.production
+MCP_PORT=8080
+DATA_SOURCE=eastmoney
+LOG_LEVEL=INFO
+ENABLE_CACHE=true
+MAX_CONCURRENT_REQUESTS=20
+ENABLE_AUTH=true
+```
+
+#### 测试环境配置
+```bash
+# .env.test
+MCP_PORT=8081
+DATA_SOURCE=mock
+LOG_LEVEL=DEBUG
+ENABLE_CACHE=false
+REQUEST_TIMEOUT=10
 ```
 
 ## 📋 系统要求
