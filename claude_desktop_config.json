@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "stock-data-service": {
+      "command": "python",
+      "args": [
+        "D:\\trae代码\\魔塔MCP\\MCP\\mcp_server_standard.py",
+        "--name",
+        "股票数据服务"
+      ],
+      "env": {
+        "PYTHONPATH": "D:\\trae代码\\魔塔MCP\\MCP",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}
