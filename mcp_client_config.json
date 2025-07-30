@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "stock-data-service": {
+      "command": "python",
+      "args": [
+        "stock_advisor_server_fixed.py",
+        "--name",
+        "股票数据服务",
+        "--debug",
+        "--port",
+        "8080"
+      ],
+      "env": {
+        "PYTHONPATH": ".",
+        "MCP_PORT": "8080",
+        "LOG_LEVEL": "INFO"
+      },
+      "cwd": "./MCP"
+    }
+  }
+}
