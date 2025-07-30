@@ -1,0 +1,320 @@
+{
+  "symbol": "600152",
+  "analysis_date": "2024-01-15T10:30:00",
+  "investment_horizon": "medium",
+  "risk_tolerance": "moderate",
+  "base_analysis": {
+    "symbol": "600152",
+    "advice_date": "2024-01-15T10:30:00",
+    "current_price": 12.58,
+    "advice": {
+      "recommendation": "推荐",
+      "action": "买入",
+      "confidence": "中高",
+      "score": 72.5,
+      "scores": {
+        "fundamental": 68.0,
+        "technical": 75.0,
+        "sentiment": 74.5
+      },
+      "reasoning": "维科技术(600152)基本面稳健，技术面显示上升趋势，市场情绪积极。公司在新材料领域布局良好，业绩有望持续增长。"
+    },
+    "risk_level": {
+      "risk_level": "中风险",
+      "risk_color": "黄色",
+      "risk_score": 58.5,
+      "risk_factors": {
+        "volatility_risk": 45.0,
+        "valuation_risk": 35.0,
+        "liquidity_risk": 25.0
+      }
+    },
+    "trading_signals": {
+      "rsi_signal": "正常区间",
+      "rsi_action": "观望",
+      "macd_signal": "金叉信号",
+      "macd_action": "买入信号",
+      "money_flow_signal": "主力资金流入",
+      "money_flow_action": "看多"
+    },
+    "target_prices": {
+      "current_price": 12.58,
+      "support_price": 11.75,
+      "resistance_price": 14.45,
+      "target_price_1m": 13.84,
+      "target_price_3m": 15.73,
+      "stop_loss": 11.16
+    },
+    "key_metrics": {
+      "估值指标": {
+        "市盈率": "28.45",
+        "市净率": "2.15",
+        "股息率": "1.25%"
+      },
+      "财务指标": {
+        "净资产收益率": "8.75%",
+        "利润率": "12.35%",
+        "负债率": "45.20%"
+      },
+      "市场指标": {
+        "成交量": "2,450,000",
+        "市值": "5,890,000,000"
+      }
+    },
+    "market_outlook": {
+      "market_outlook": "乐观",
+      "price_trend": "温和上涨",
+      "sentiment_score": 0.68,
+      "analyst_consensus": "买入",
+      "key_drivers": [
+        "新材料业务增长",
+        "新能源布局见效",
+        "政策支持力度加大",
+        "技术突破预期"
+      ]
+    },
+    "recommendations": [
+      {
+        "type": "投资建议",
+        "title": "适合中期持有",
+        "content": "该股票风险适中，适合中期投资者持有"
+      },
+      {
+        "type": "操作策略",
+        "title": "分批建仓",
+        "content": "建议分批次建仓，降低平均成本"
+      },
+      {
+        "type": "监控要点",
+        "title": "关注季度业绩",
+        "content": "密切关注公司季度财报和业绩指引"
+      },
+      {
+        "type": "市场观察",
+        "title": "跟踪行业动态",
+        "content": "关注新材料行业发展趋势和政策变化"
+      }
+    ]
+  },
+  "enhanced_analysis": {
+    "momentum_analysis": {
+      "momentum_scores": {
+        "short_term": 65.0,
+        "medium_term": 78.0,
+        "long_term": 72.0
+      },
+      "sustainability": {
+        "overextended_risk": false,
+        "volume_support": true,
+        "momentum_strength": 72.5,
+        "sustainability_score": 75.0
+      },
+      "turning_points": {
+        "oversold_signal": false,
+        "overbought_signal": false,
+        "macd_divergence": "无背离",
+        "turning_point_probability": 15.0
+      },
+      "momentum_strength": 71.7
+    },
+    "volatility_analysis": {
+      "current_volatility": 28.5,
+      "volatility_trend": "下降",
+      "volatility_percentile": 35.0,
+      "volatility_regime": "低波动"
+    },
+    "correlation_analysis": {
+      "market_correlation": 0.75,
+      "sector_correlation": 0.82,
+      "beta": 1.15,
+      "r_squared": 0.72
+    },
+    "seasonal_analysis": {
+      "seasonal_strength": "中等",
+      "best_months": ["3月", "4月", "11月"],
+      "worst_months": ["7月", "8月"],
+      "seasonal_score": 65.0
+    },
+    "event_analysis": {
+      "recent_events": [
+        {
+          "date": "2024-01-10",
+          "event": "业绩预告超预期",
+          "impact": "正面",
+          "price_impact": "+5.2%"
+        },
+        {
+          "date": "2024-01-05",
+          "event": "新材料项目获批",
+          "impact": "正面",
+          "price_impact": "+3.8%"
+        }
+      ],
+      "upcoming_events": [
+        {
+          "date": "2024-01-25",
+          "event": "年报发布",
+          "importance": "高",
+          "expected_impact": "正面"
+        }
+      ]
+    }
+  },
+  "personalized_advice": {
+    "risk_assessment": {
+      "adjusted_risk_score": 58.5,
+      "suitability": "适合",
+      "risk_warnings": [
+        "股价波动适中，需要关注市场情绪变化"
+      ]
+    },
+    "allocation_advice": {
+      "recommended_allocation": "8.0%",
+      "rationale": "基于medium期投资和moderate风险偏好",
+      "position_sizing": {
+        "base_position": "8.0%",
+        "volatility_adjusted": "7.5%",
+        "max_position": "16.0%",
+        "min_position": "4.0%"
+      }
+    },
+    "timing_advice": {
+      "entry_timing": "较好买入时机",
+      "optimal_entry_range": "11.75 - 12.58",
+      "aggressive_entry": "12.58 - 13.21",
+      "conservative_entry": "11.52 - 11.75"
+    },
+    "personalized_strategies": [
+      {
+        "strategy": "分批建仓",
+        "description": "在2-4周内分批建立仓位",
+        "suitability": "稳健投资者"
+      },
+      {
+        "strategy": "定投策略",
+        "description": "定期定额投资，平滑成本",
+        "suitability": "长期投资者"
+      }
+    ]
+  },
+  "scenario_analysis": {
+    "bull_scenario": {
+      "probability": 30,
+      "price_target": 16.35,
+      "catalysts": ["新材料业务超预期", "政策支持力度加大", "技术突破"],
+      "timeframe": "3-6个月"
+    },
+    "bear_scenario": {
+      "probability": 25,
+      "price_target": 9.05,
+      "catalysts": ["业绩不及预期", "行业竞争加剧", "政策收紧"],
+      "timeframe": "3-6个月"
+    },
+    "base_scenario": {
+      "probability": 45,
+      "price_target": 14.20,
+      "catalysts": ["稳健增长", "行业平均表现"],
+      "timeframe": "6-12个月"
+    },
+    "expected_value": 13.87
+  },
+  "portfolio_advice": {
+    "diversification_strategy": {
+      "sector_allocation": "新材料行业不超过15%",
+      "stock_correlation": "选择相关性低于0.7的股票",
+      "geographic_diversification": "考虑港股和美股标的",
+      "asset_allocation": "股票占60-70%，债券占30-40%"
+    },
+    "hedging_strategy": {
+      "hedging_instruments": ["股指期货", "个股期权"],
+      "hedging_ratio": "20-30%仓位对冲",
+      "cost_analysis": "对冲成本约占收益的2-5%",
+      "effectiveness": "可降低30-50%的下行风险"
+    },
+    "rebalancing_frequency": "每月",
+    "monitoring_indicators": [
+      "股价相对强弱指标(RSI)",
+      "成交量变化",
+      "MACD金叉/死叉",
+      "20日均线支撑/阻力",
+      "资金流向",
+      "行业相对表现",
+      "重要财报发布日期"
+    ]
+  },
+  "advanced_metrics": {
+    "sharpe_ratio": 1.25,
+    "sortino_ratio": 1.85,
+    "max_drawdown": -15.2,
+    "calmar_ratio": 0.82,
+    "var_95": -8.5,
+    "expected_shortfall": -12.3,
+    "information_ratio": 0.75,
+    "tracking_error": 4.2
+  },
+  "market_timing": {
+    "current_state": "平衡",
+    "market_regime": "上升趋势",
+    "volatility_environment": "低波动",
+    "liquidity_condition": "流动性良好",
+    "technical_score": 75.0,
+    "fundamental_score": 68.0,
+    "sentiment_score": 72.0
+  },
+  "sector_analysis": {
+    "sector_performance": "跑赢大盘",
+    "sector_ranking": 3,
+    "sector_score": 78.0,
+    "relative_strength": 1.15,
+    "sector_momentum": "正面",
+    "industry_drivers": [
+      "新能源需求增长",
+      "政策支持",
+      "技术升级",
+      "成本下降"
+    ]
+  },
+  "competitive_analysis": {
+    "market_position": "行业前三",
+    "competitive_score": 82.0,
+    "market_share": 15.2,
+    "competitive_advantages": [
+      "技术领先",
+      "成本控制",
+      "客户关系",
+      "规模效应"
+    ],
+    "peer_comparison": {
+      "valuation": "合理",
+      "growth": "领先",
+      "profitability": "优秀",
+      "efficiency": "良好"
+    }
+  },
+  "valuation_models": {
+    "dcf_model": {
+      "fair_value": 14.85,
+      "upside_potential": 18.0,
+      "key_assumptions": {
+        "revenue_growth": 12.5,
+        "margin_expansion": 1.5,
+        "terminal_growth": 3.0,
+        "discount_rate": 8.5
+      }
+    },
+    "pe_model": {
+      "fair_value": 13.95,
+      "upside_potential": 10.9,
+      "target_multiple": 32.0,
+      "peer_average": 35.0
+    },
+    "ev_ebitda_model": {
+      "fair_value": 15.20,
+      "upside_potential": 20.8,
+      "target_multiple": 12.5,
+      "peer_average": 14.0
+    },
+    "consensus_target": 14.67,
+    "valuation_synthesis": "合理偏低"
+  }
+}
